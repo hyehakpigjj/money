@@ -40,7 +40,7 @@
             <div class="max-w-4xl mx-auto flex justify-between items-center mb-4">
                 <div class="flex items-center space-x-3">
                     <button id="prev-month" class="text-white hover:bg-teal-600 p-2 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
-                    <h2 id="current-month-title" class="text-xl font-bold">2026년 9월</h2>
+                    <h2 id="current-month-title" class="text-xl font-bold">2026년 10월</h2>
                     <button id="next-month" class="text-white hover:bg-teal-600 p-2 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -54,11 +54,11 @@
             <!-- 요약 KPI 카드 -->
             <div class="max-w-4xl mx-auto grid grid-cols-2 gap-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
                 <div>
-                    <span class="text-xs text-teal-100 font-medium">이번달 수입</span>
+                    <span class="text-xs text-teal-100 font-medium">이번달 수입 (25일 기준)</span>
                     <div id="summary-income" class="text-lg font-bold text-emerald-200">0원</div>
                 </div>
                 <div>
-                    <span class="text-xs text-teal-100 font-medium">이번달 지출</span>
+                    <span class="text-xs text-teal-100 font-medium">이번달 지출 (25일 기준)</span>
                     <div id="summary-expense" class="text-lg font-bold text-pink-200">0원</div>
                 </div>
             </div>
@@ -190,7 +190,7 @@
     <script>
         let allData = [];
         let currentYear = 2026;
-        let currentMonth = 9;
+        let currentMonth = 10; // 디폴트 10월
         let selectedDateStr = null;
         let pieChartInstance = null;
         let currentCategoryRanking = [];
@@ -224,7 +224,6 @@
                 reader.readAsArrayBuffer(file);
                 reader.onload = async function(evt) {
                     const buffer = evt.target.result;
-                    // Base64로 변환하여 localStorage에 저장
                     const base64 = arrayBufferToBase64(buffer);
                     localStorage.setItem('weple_raw_data', base64);
                     localStorage.setItem('weple_file_type', 'sqlite');
@@ -320,8 +319,13 @@
                 if (dates.length > 0) {
                     const latest = dates[dates.length - 1];
                     const parts = latest.split('-');
-                    currentYear = parseInt(parts[0]);
-                    currentMonth = parseInt(parts[1]);
+                    const latestY = parseInt(parts[0]);
+                    const latestM = parseInt(parts[1]);
+                    const latestD = parseInt(parts[2]);
+                    
+                    // 25일 이후라면 해당 월이 실제 위플머니 기준 이번달(혹은 다음달 주기)
+                    currentYear = latestY;
+                    currentMonth = latestD >= 25 ? latestM : (latestM === 1 ? 12 : latestM - 1);
                 }
             }
         }
@@ -360,8 +364,12 @@
                 if (dates.length > 0) {
                     const latest = dates[dates.length - 1];
                     const parts = latest.split('-');
-                    currentYear = parseInt(parts[0]);
-                    currentMonth = parseInt(parts[1]);
+                    const latestY = parseInt(parts[0]);
+                    const latestM = parseInt(parts[1]);
+                    const latestD = parseInt(parts[2]);
+                    
+                    currentYear = latestY;
+                    currentMonth = latestD >= 25 ? latestM : (latestM === 1 ? 12 : latestM - 1);
                 }
             }
         }
@@ -385,6 +393,38 @@
             return result;
         }
 
+        // 특정 날짜가 속한 위플머니 기준 '월(Cycle)'을 반환 (25일 ~ 익월 24일)
+        function getWepleCycleMonth(dateStr) {
+            if (!dateStr || dateStr.length < 10) return { y: 0, m: 0 };
+            const parts = dateStr.split('-');
+            let y = parseInt(parts[0]);
+            let m = parseInt(parts[1]);
+            let d = parseInt(parts[2]);
+
+            if (d >= 25) {
+                m += 1;
+                if (m > 12) { m = 1; y += 1; }
+            }
+            return { y, m };
+        }
+
+        // 특정 위플머니 월(y, m)의 시작일과 종료일 문자열 반환 (시작: 전월 25일, 종료: 당월 24일)
+        function getCycleDateRange(y, m) {
+            let startM = m - 1;
+            let startY = y;
+            if (startM < 1) { startM = 12; startY -= 1; }
+
+            const startStr = `${startY}-${String(startM).padStart(2, '0')}-25`;
+            const endStr = `${y}-${String(m).padStart(2, '0')}-24`;
+            return { startStr, endStr };
+        }
+
+        // 해당 거래일이 현재 선택된 사이클 월(currentYear, currentMonth)에 속하는지 확인
+        function isDateInCurrentCycle(dateStr) {
+            const cycle = getWepleCycleMonth(dateStr);
+            return cycle.y === currentYear && cycle.m === currentMonth;
+        }
+
         function initDashboard() {
             updateMonthHeader();
             renderCalendar();
@@ -392,7 +432,11 @@
             renderAnalytics();
             renderTransactionsTable();
             
-            const defaultDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+            // 사이클 시작일(전월 25일)을 기본 선택일로
+            let startM = currentMonth - 1;
+            let startY = currentYear;
+            if (startM < 1) { startM = 12; startY -= 1; }
+            const defaultDate = `${startY}-${String(startM).padStart(2, '0')}-25`;
             selectDate(defaultDate);
         }
 
@@ -417,11 +461,7 @@
         function updateMonthHeader() {
             document.getElementById('current-month-title').innerText = `${currentYear}년 ${currentMonth}월`;
             
-            const monthFiltered = allData.filter(d => {
-                if (!d.거래일) return false;
-                const [y, m] = d.거래일.split('-').map(Number);
-                return y === currentYear && m === currentMonth;
-            });
+            const monthFiltered = allData.filter(d => isDateInCurrentCycle(d.거래일));
 
             const income = monthFiltered.filter(d => d.수입지출 === '수입').reduce((sum, d) => sum + d.금액, 0);
             const expense = monthFiltered.filter(d => d.수입지출 === '지출').reduce((sum, d) => sum + d.금액, 0);
@@ -434,6 +474,7 @@
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
 
+            // 위플머니 사이클 월(currentYear, currentMonth)의 달력 뷰는 당월 1일 ~ 말일 기준으로 표시하되 데이터는 사이클 기준 필터링
             const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay();
             const lastDay = new Date(currentYear, currentMonth, 0).getDate();
 
@@ -509,8 +550,7 @@
         function renderAnalytics() {
             const monthFiltered = allData.filter(d => {
                 if (!d.거래일 || d.수입지출 !== '지출') return false;
-                const [y, m] = d.거래일.split('-').map(Number);
-                return y === currentYear && m === currentMonth;
+                return isDateInCurrentCycle(d.거래일);
             });
 
             const categoryMap = {};
@@ -551,15 +591,19 @@
 
         function renderWeeklyPattern(monthFiltered) {
             const container = document.getElementById('weekly-pattern-container');
-            const weeks = { '1주차(1~7일)': 0, '2주차(8~14일)': 0, '3주차(15~21일)': 0, '4주차(22~28일)': 0, '5주차(29일~)': 0 };
+            const range = getCycleDateRange(currentYear, currentMonth);
+            const startDate = new Date(range.startStr);
+
+            const weeks = { '1주차(25~31일)': 0, '2주차(1~7일)': 0, '3주차(8~14일)': 0, '4주차(15~21일)': 0, '5주차(22일~)': 0 };
 
             monthFiltered.forEach(d => {
-                const day = parseInt(d.거래일.split('-')[2]);
-                if (day <= 7) weeks['1주차(1~7일)'] += d.금액;
-                else if (day <= 14) weeks['2주차(8~14일)'] += d.금액;
-                else if (day <= 21) weeks['3주차(15~21일)'] += d.금액;
-                else if (day <= 28) weeks['4주차(22~28일)'] += d.금액;
-                else weeks['5주차(29일~)'] += d.금액;
+                const dDate = new Date(d.거래일);
+                const diffDays = Math.floor((dDate - startDate) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 6) weeks['1주차(25~31일)'] += d.금액;
+                else if (diffDays <= 13) weeks['2주차(1~7일)'] += d.금액;
+                else if (diffDays <= 20) weeks['3주차(8~14일)'] += d.금액;
+                else if (diffDays <= 27) weeks['4주차(15~21일)'] += d.금액;
+                else weeks['5주차(22일~)'] += d.금액;
             });
 
             const total = Object.values(weeks).reduce((a, b) => a + b, 0);
@@ -585,8 +629,8 @@
 
             const prevMonthFiltered = allData.filter(d => {
                 if (!d.거래일 || d.수입지출 !== '지출') return false;
-                const [y, m] = d.거래일.split('-').map(Number);
-                return y === prevY && m === prevM;
+                const cycle = getWepleCycleMonth(d.거래일);
+                return cycle.y === prevY && cycle.m === prevM;
             });
 
             const currentMap = {};
@@ -670,8 +714,7 @@
             const categoryName = activeModalCategory;
             const monthFiltered = allData.filter(d => {
                 if (!d.거래일 || d.수입지출 !== '지출' || d.분류 !== categoryName) return false;
-                const [y, m] = d.거래일.split('-').map(Number);
-                return y === currentYear && m === currentMonth;
+                return isDateInCurrentCycle(d.거래일);
             });
 
             const subcatMap = {};
@@ -729,10 +772,10 @@
             const freqBox = document.getElementById('frequency-analysis-box');
 
             const filtered = allData.filter(d => {
-                const matchMonth = d.거래일 && d.거래일.startsWith(`${currentYear}-${String(currentMonth).padStart(2, '0')}`);
+                const matchCycle = isDateInCurrentCycle(d.거래일);
                 const matchKeyword = (d.내역 && d.내역.toLowerCase().includes(keyword)) || (d.카드 && d.카드.toLowerCase().includes(keyword));
                 const matchCat = !catFilter || d.분류 === catFilter;
-                return matchMonth && matchKeyword && matchCat;
+                return matchCycle && matchKeyword && matchCat;
             });
 
             if (keyword.length > 0) {
