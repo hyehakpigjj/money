@@ -14,19 +14,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; }
-        .weple-header { background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%); }
+        .weple-header { background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); } /* 위플머니 퍼플 톤 반영 */
     </style>
 </head>
 <body class="text-gray-800 pb-20">
 
     <!-- 파일 업로드 화면 -->
-    <div id="upload-screen" class="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-50 to-teal-100">
-        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-teal-100">
-            <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+    <div id="upload-screen" class="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-purple-100">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-purple-100">
+            <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
                 <i class="fa-solid fa-wallet"></i>
             </div>
             <h1 class="text-xl font-bold text-gray-800 mb-6">위플머니 가계부 분석</h1>
-            <label class="block w-full py-4 px-6 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl cursor-pointer transition shadow-lg hover:shadow-teal-200">
+            <label class="block w-full py-4 px-6 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl cursor-pointer transition shadow-lg hover:shadow-purple-200">
                 <i class="fa-solid fa-file-arrow-up mr-2"></i> CSV 또는 백업파일 업로드
                 <input type="file" id="file-input" accept=".csv, .sqlite" class="hidden">
             </label>
@@ -39,12 +39,12 @@
         <header class="weple-header text-white px-4 pt-4 pb-6 shadow-md">
             <div class="max-w-4xl mx-auto flex justify-between items-center mb-4">
                 <div class="flex items-center space-x-3">
-                    <button id="prev-month" class="text-white hover:bg-teal-600 p-2 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
-                    <h2 id="current-month-title" class="text-xl font-bold">2026년 10월</h2>
-                    <button id="next-month" class="text-white hover:bg-teal-600 p-2 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button id="prev-month" class="text-white hover:bg-purple-700 p-2 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
+                    <h2 id="current-month-title" class="text-xl font-bold">10월</h2>
+                    <button id="next-month" class="text-white hover:bg-purple-700 p-2 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <label class="cursor-pointer bg-teal-700 hover:bg-teal-800 text-xs px-3 py-1.5 rounded-lg transition text-white shadow">
+                    <label class="cursor-pointer bg-purple-700 hover:bg-purple-800 text-xs px-3 py-1.5 rounded-lg transition text-white shadow">
                         <i class="fa-solid fa-sync-alt mr-1"></i> 파일 변경
                         <input type="file" id="file-change" accept=".csv, .sqlite" class="hidden">
                     </label>
@@ -54,13 +54,17 @@
             <!-- 요약 KPI 카드 -->
             <div class="max-w-4xl mx-auto grid grid-cols-2 gap-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
                 <div>
-                    <span class="text-xs text-teal-100 font-medium">이번달 수입 (25일 기준)</span>
+                    <span class="text-xs text-purple-100 font-medium">수입</span>
                     <div id="summary-income" class="text-lg font-bold text-emerald-200">0원</div>
                 </div>
                 <div>
-                    <span class="text-xs text-teal-100 font-medium">이번달 지출 (25일 기준)</span>
+                    <span class="text-xs text-purple-100 font-medium">지출</span>
                     <div id="summary-expense" class="text-lg font-bold text-pink-200">0원</div>
                 </div>
+            </div>
+            <div class="max-w-4xl mx-auto mt-2 px-1 flex justify-between items-center text-xs text-purple-100">
+                <span>현금 잔액</span>
+                <span id="summary-balance" class="font-bold text-white text-sm">0원</span>
             </div>
         </header>
 
@@ -90,34 +94,30 @@
             <!-- 2. 통계/인사이트 뷰 -->
             <section id="tab-analytics" class="space-y-4 hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- 도넛 차트 -->
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-pie text-teal-500 mr-1.5"></i> 카테고리별 지출 비중</h3>
+                        <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-pie text-purple-500 mr-1.5"></i> 카테고리별 지출 비중</h3>
                         <div class="relative h-64 flex items-center justify-center">
                             <canvas id="categoryPieChart"></canvas>
                         </div>
                     </div>
-                    <!-- 분류별 순위 -->
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-gray-700 text-sm mb-1"><i class="fa-solid fa-chart-bar text-teal-500 mr-1.5"></i> 분류별 지출 순위</h3>
+                        <h3 class="font-bold text-gray-700 text-sm mb-1"><i class="fa-solid fa-chart-bar text-purple-500 mr-1.5"></i> 분류별 지출 순위</h3>
                         <p class="text-[11px] text-gray-400 mb-3">카테고리를 누르면 하위 분류 상세 내역을 볼 수 있습니다.</p>
                         <div class="flex justify-end mb-2 space-x-2">
-                            <button onclick="sortCategoryList('desc')" class="text-xs bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2.5 py-1 rounded font-medium transition">높은순</button>
-                            <button onclick="sortCategoryList('asc')" class="text-xs bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2.5 py-1 rounded font-medium transition">낮은순</button>
+                            <button onclick="sortCategoryList('desc')" class="text-xs bg-gray-100 hover:bg-purple-50 hover:text-purple-600 px-2.5 py-1 rounded font-medium transition">높은순</button>
+                            <button onclick="sortCategoryList('asc')" class="text-xs bg-gray-100 hover:bg-purple-50 hover:text-purple-600 px-2.5 py-1 rounded font-medium transition">낮은순</button>
                         </div>
                         <div id="category-ranking-list" class="space-y-2 max-h-52 overflow-y-auto pr-1 text-xs"></div>
                     </div>
                 </div>
 
-                <!-- 추가 인사이트 1: 주차별 지출 패턴 -->
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-calendar-week text-teal-500 mr-1.5"></i> 주차별 지출 패턴 분석</h3>
+                    <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-calendar-week text-purple-500 mr-1.5"></i> 주차별 지출 패턴 분석</h3>
                     <div id="weekly-pattern-container" class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs"></div>
                 </div>
 
-                <!-- 추가 인사이트 2: 전월 대비 카테고리 증감 비교 -->
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-line text-teal-500 mr-1.5"></i> 전월 대비 카테고리별 지출 증감</h3>
+                    <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-line text-purple-500 mr-1.5"></i> 전월 대비 카테고리별 지출 증감</h3>
                     <div id="mom-comparison-container" class="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs"></div>
                 </div>
             </section>
@@ -126,14 +126,13 @@
             <section id="tab-transactions" class="space-y-4 hidden">
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 space-y-3">
                     <div class="flex flex-col sm:flex-row justify-between gap-2">
-                        <input type="text" id="search-keyword" placeholder="가맹점/내역 검색 (예: 렌즈, 쿠팡)..." class="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-teal-500 w-full sm:w-72">
-                        <select id="filter-category" class="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-teal-500">
+                        <input type="text" id="search-keyword" placeholder="가맹점/내역 검색 (예: 렌즈, 쿠팡)..." class="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-purple-500 w-full sm:w-72">
+                        <select id="filter-category" class="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-purple-500">
                             <option value="">모든 분류 보기</option>
                         </select>
                     </div>
                     
-                    <!-- 키워드 주기 분석 결과 박스 -->
-                    <div id="frequency-analysis-box" class="hidden p-3 bg-teal-50 border border-teal-200 rounded-xl text-xs text-teal-900 space-y-1"></div>
+                    <div id="frequency-analysis-box" class="hidden p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900 space-y-1"></div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
@@ -155,15 +154,15 @@
 
         <!-- 하단 네비게이션바 -->
         <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg py-2 px-6 flex justify-around items-center max-w-md mx-auto rounded-t-2xl z-50">
-            <button onclick="switchTab('calendar')" id="nav-btn-calendar" class="flex flex-col items-center text-teal-600 font-semibold transition">
+            <button onclick="switchTab('calendar')" id="nav-btn-calendar" class="flex flex-col items-center text-purple-600 font-semibold transition">
                 <i class="fa-solid fa-calendar-days text-lg mb-0.5"></i>
                 <span class="text-[10px]">캘린더</span>
             </button>
-            <button onclick="switchTab('analytics')" id="nav-btn-analytics" class="flex flex-col items-center text-gray-400 hover:text-teal-600 transition">
+            <button onclick="switchTab('analytics')" id="nav-btn-analytics" class="flex flex-col items-center text-gray-400 hover:text-purple-600 transition">
                 <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i>
                 <span class="text-[10px]">통계/인사이트</span>
             </button>
-            <button onclick="switchTab('transactions')" id="nav-btn-transactions" class="flex flex-col items-center text-gray-400 hover:text-teal-600 transition">
+            <button onclick="switchTab('transactions')" id="nav-btn-transactions" class="flex flex-col items-center text-gray-400 hover:text-purple-600 transition">
                 <i class="fa-solid fa-list-ul text-lg mb-0.5"></i>
                 <span class="text-[10px]">전체내역</span>
             </button>
@@ -177,8 +176,8 @@
                 <h3 id="modal-category-title" class="font-bold text-gray-800 text-sm">카테고리 상세</h3>
                 <div class="flex items-center space-x-2">
                     <div class="space-x-1">
-                        <button onclick="sortSubcatModal('desc')" class="text-[10px] bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2 py-0.5 rounded font-medium transition">높은순</button>
-                        <button onclick="sortSubcatModal('asc')" class="text-[10px] bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2 py-0.5 rounded font-medium transition">낮은순</button>
+                        <button onclick="sortSubcatModal('desc')" class="text-[10px] bg-gray-100 hover:bg-purple-50 hover:text-purple-600 px-2 py-0.5 rounded font-medium transition">높은순</button>
+                        <button onclick="sortSubcatModal('asc')" class="text-[10px] bg-gray-100 hover:bg-purple-50 hover:text-purple-600 px-2 py-0.5 rounded font-medium transition">낮은순</button>
                     </div>
                     <button onclick="closeSubcatModal()" class="text-gray-400 hover:text-gray-600 text-sm p-1 ml-2"><i class="fa-solid fa-xmark text-base"></i></button>
                 </div>
@@ -190,12 +189,15 @@
     <script>
         let allData = [];
         let currentYear = 2026;
-        let currentMonth = 10; // 디폴트 10월
+        let currentMonth = 10;
         let selectedDateStr = null;
         let pieChartInstance = null;
         let currentCategoryRanking = [];
         let activeModalCategory = null;
         let modalSubcatSortOrder = 'desc';
+
+        // 오늘 날짜 (미래 내역 필터링용)
+        const TODAY_STR = '2026-09-29';
 
         window.addEventListener('DOMContentLoaded', async () => {
             const savedData = localStorage.getItem('weple_raw_data');
@@ -304,7 +306,7 @@
                 allData.push({
                     거래일: row.거래일 || '',
                     수입지출: isDeposit ? '수입' : '지출',
-                    금액: Math.abs(row.금액 || 0),
+                    금액: row.금액 || 0,
                     분류: cleanText(row.분류) || '미분류',
                     하위분류: cleanText(row.하위분류),
                     내역: cleanText(row.내역) || '',
@@ -323,7 +325,6 @@
                     const latestM = parseInt(parts[1]);
                     const latestD = parseInt(parts[2]);
                     
-                    // 25일 이후라면 해당 월이 실제 위플머니 기준 이번달(혹은 다음달 주기)
                     currentYear = latestY;
                     currentMonth = latestD >= 25 ? latestM : (latestM === 1 ? 12 : latestM - 1);
                 }
@@ -393,7 +394,7 @@
             return result;
         }
 
-        // 특정 날짜가 속한 위플머니 기준 '월(Cycle)'을 반환 (25일 ~ 익월 24일)
+        // 위플머니 사이클 월 판정 (전월 25일 ~ 당월 24일)
         function getWepleCycleMonth(dateStr) {
             if (!dateStr || dateStr.length < 10) return { y: 0, m: 0 };
             const parts = dateStr.split('-');
@@ -408,21 +409,14 @@
             return { y, m };
         }
 
-        // 특정 위플머니 월(y, m)의 시작일과 종료일 문자열 반환 (시작: 전월 25일, 종료: 당월 24일)
-        function getCycleDateRange(y, m) {
-            let startM = m - 1;
-            let startY = y;
-            if (startM < 1) { startM = 12; startY -= 1; }
-
-            const startStr = `${startY}-${String(startM).padStart(2, '0')}-25`;
-            const endStr = `${y}-${String(m).padStart(2, '0')}-24`;
-            return { startStr, endStr };
-        }
-
-        // 해당 거래일이 현재 선택된 사이클 월(currentYear, currentMonth)에 속하는지 확인
         function isDateInCurrentCycle(dateStr) {
             const cycle = getWepleCycleMonth(dateStr);
             return cycle.y === currentYear && cycle.m === currentMonth;
+        }
+
+        // 미래 내역 필터링 (오늘 날짜 이후는 제외)
+        function isNotFuture(dateStr) {
+            return dateStr <= TODAY_STR;
         }
 
         function initDashboard() {
@@ -432,12 +426,7 @@
             renderAnalytics();
             renderTransactionsTable();
             
-            // 사이클 시작일(전월 25일)을 기본 선택일로
-            let startM = currentMonth - 1;
-            let startY = currentYear;
-            if (startM < 1) { startM = 12; startY -= 1; }
-            const defaultDate = `${startY}-${String(startM).padStart(2, '0')}-25`;
-            selectDate(defaultDate);
+            selectDate(TODAY_STR);
         }
 
         document.getElementById('prev-month').addEventListener('click', () => {
@@ -459,24 +448,34 @@
         });
 
         function updateMonthHeader() {
-            document.getElementById('current-month-title').innerText = `${currentYear}년 ${currentMonth}월`;
+            document.getElementById('current-month-title').innerText = `${currentMonth}월`;
             
-            const monthFiltered = allData.filter(d => isDateInCurrentCycle(d.거래일));
+            // 사이클 내역 중 미래 내역 제외
+            const monthFiltered = allData.filter(d => {
+                if (!d.거래일) return false;
+                return isDateInCurrentCycle(d.거래일) && isNotFuture(d.거래일);
+            });
 
-            const income = monthFiltered.filter(d => d.수입지출 === '수입').reduce((sum, d) => sum + d.금액, 0);
-            const expense = monthFiltered.filter(d => d.수입지출 === '지출').reduce((sum, d) => sum + d.금액, 0);
+            const income = monthFiltered.filter(d => d.수입지출 === '수입').reduce((sum, d) => sum + Math.abs(d.금액), 0);
+            const expense = monthFiltered.filter(d => d.수입지출 === '지출').reduce((sum, d) => sum + Math.abs(d.금액), 0);
+            const balance = income - expense;
 
             document.getElementById('summary-income').innerText = income.toLocaleString() + '원';
             document.getElementById('summary-expense').innerText = expense.toLocaleString() + '원';
+            document.getElementById('summary-balance').innerText = balance.toLocaleString() + '원';
         }
 
         function renderCalendar() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
 
-            // 위플머니 사이클 월(currentYear, currentMonth)의 달력 뷰는 당월 1일 ~ 말일 기준으로 표시하되 데이터는 사이클 기준 필터링
+            // 10월 캘린더뷰여도 9월 25일이 포함된 첫 주차부터 보이도록 렌더링
+            // 당월 1일의 요일 인덱스
             const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay();
             const lastDay = new Date(currentYear, currentMonth, 0).getDate();
+
+            // 전월 말일
+            const prevLastDay = new Date(currentYear, currentMonth - 1, 0).getDate();
 
             const dailyMap = {};
             allData.forEach(d => {
@@ -484,15 +483,44 @@
                 const [y, m, day] = d.거래일.split('-').map(Number);
                 if (y === currentYear && m === currentMonth) {
                     if (!dailyMap[day]) dailyMap[day] = { income: 0, expense: 0 };
-                    if (d.수입지출 === '수입') dailyMap[day].income += d.금액;
-                    if (d.수입지출 === '지출') dailyMap[day].expense += d.금액;
+                    if (d.수입지출 === '수입') dailyMap[day].income += Math.abs(d.금액);
+                    if (d.수입지출 === '지출') dailyMap[day].expense += Math.abs(d.금액);
                 }
             });
 
+            // 9월 25일이 포함된 주차를 보여주기 위해 일요일 시작 기준으로 앞서 빈 칸 채우기 또는 전월 25~31일 표시
+            // 만약 firstDayIndex가 일요일(0)이 아니라면, 전월 25일부터 시작하도록 칸 구성
+            let startDayNum = prevLastDay - firstDayIndex + 1;
+            
+            // 전월 25일부터 말일까지 선행 표시
             for (let i = 0; i < firstDayIndex; i++) {
-                grid.innerHTML += `<div class="p-1 h-20 bg-gray-50/50 rounded-lg opacity-30"></div>`;
+                const pDay = startDayNum + i;
+                let prevM = currentMonth - 1;
+                let prevY = currentYear;
+                if (prevM < 1) { prevM = 12; prevY--; }
+                const dateStr = `${prevY}-${String(prevM).padStart(2, '0')}-${String(pDay).padStart(2, '0')}`;
+                
+                // 전월 데이터 집계 확인
+                let pIncome = 0, pExpense = 0;
+                allData.forEach(d => {
+                    if (d.거래일 === dateStr) {
+                        if (d.수입지출 === '수입') pIncome += Math.abs(d.금액);
+                        if (d.수입지출 === '지출') pExpense += Math.abs(d.금액);
+                    }
+                });
+
+                grid.innerHTML += `
+                    <div onclick="selectDate('${dateStr}')" class="p-1 h-20 bg-gray-50/70 hover:bg-teal-50 rounded-lg cursor-pointer transition flex flex-col justify-between border border-transparent hover:border-teal-300 ${selectedDateStr === dateStr ? 'ring-2 ring-teal-500 bg-teal-50/60' : ''}">
+                        <div class="text-right text-xs font-medium text-gray-400">${pDay}</div>
+                        <div class="text-[9px] space-y-0.5 overflow-hidden">
+                            ${pIncome > 0 ? `<div class="text-emerald-600 font-semibold truncate">+${formatShort(pIncome)}</div>` : ''}
+                            ${pExpense > 0 ? `<div class="text-pink-500 font-semibold truncate">-${formatShort(pExpense)}</div>` : ''}
+                        </div>
+                    </div>
+                `;
             }
 
+            // 당월 1일 ~ 말일 채우기
             for (let day = 1; day <= lastDay; day++) {
                 const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const data = dailyMap[day] || { income: 0, expense: 0 };
@@ -518,11 +546,11 @@
             selectedDateStr = dateStr;
             renderCalendar();
 
-            const [y, m, d] = dateStr.split('-');
-            document.getElementById('selected-date-title').innerText = `${parseInt(m)}월 ${parseInt(d)}일 상세 내역`;
+            const parts = dateStr.split('-');
+            document.getElementById('selected-date-title').innerText = `${parseInt(parts[1])}월 ${parseInt(parts[2])}일 상세 내역`;
 
             const dayTransactions = allData.filter(item => item.거래일 === dateStr);
-            const totalExp = dayTransactions.filter(item => item.수입지출 === '지출').reduce((sum, item) => sum + item.금액, 0);
+            const totalExp = dayTransactions.filter(item => item.수입지출 === '지출').reduce((sum, item) => sum + Math.abs(item.금액), 0);
             document.getElementById('selected-date-summary').innerText = `지출 합계: ${totalExp.toLocaleString()}원`;
 
             const container = document.getElementById('selected-date-transactions');
@@ -541,7 +569,7 @@
                         </div>
                     </div>
                     <div class="text-xs font-bold ${item.수입지출 === '수입' ? 'text-emerald-600' : 'text-pink-500'}">
-                        ${item.수입지출 === '수입' ? '+' : '-'}${item.금액.toLocaleString()}원
+                        ${item.수입지출 === '수입' ? '+' : '-'}${Math.abs(item.금액).toLocaleString()}원
                     </div>
                 </div>
             `).join('');
@@ -550,12 +578,12 @@
         function renderAnalytics() {
             const monthFiltered = allData.filter(d => {
                 if (!d.거래일 || d.수입지출 !== '지출') return false;
-                return isDateInCurrentCycle(d.거래일);
+                return isDateInCurrentCycle(d.거래일) && isNotFuture(d.거래일);
             });
 
             const categoryMap = {};
             monthFiltered.forEach(d => {
-                categoryMap[d.분류] = (categoryMap[d.분류] || 0) + d.금액;
+                categoryMap[d.분류] = (categoryMap[d.분류] || 0) + Math.abs(d.금액);
             });
 
             currentCategoryRanking = Object.entries(categoryMap).map(([cat, amount]) => ({ cat, amount }));
@@ -573,7 +601,7 @@
                     labels: labels,
                     datasets: [{
                         data: dataVals,
-                        backgroundColor: ['#2dd4bf', '#38bdf8', '#818cf8', '#c084fc', '#f472b6', '#fb7185', '#facc15', '#4ade80', '#94a3b8']
+                        backgroundColor: ['#a78bfa', '#38bdf8', '#818cf8', '#c084fc', '#f472b6', '#fb7185', '#facc15', '#4ade80', '#94a3b8']
                     }]
                 },
                 options: {
@@ -591,19 +619,21 @@
 
         function renderWeeklyPattern(monthFiltered) {
             const container = document.getElementById('weekly-pattern-container');
-            const range = getCycleDateRange(currentYear, currentMonth);
-            const startDate = new Date(range.startStr);
+            let prevM = currentMonth - 1;
+            let prevY = currentYear;
+            if (prevM < 1) { prevM = 12; prevY--; }
+            const startDate = new Date(`${prevY}-${String(prevM).padStart(2, '0')}-25`);
 
             const weeks = { '1주차(25~31일)': 0, '2주차(1~7일)': 0, '3주차(8~14일)': 0, '4주차(15~21일)': 0, '5주차(22일~)': 0 };
 
             monthFiltered.forEach(d => {
                 const dDate = new Date(d.거래일);
                 const diffDays = Math.floor((dDate - startDate) / (1000 * 60 * 60 * 24));
-                if (diffDays <= 6) weeks['1주차(25~31일)'] += d.금액;
-                else if (diffDays <= 13) weeks['2주차(1~7일)'] += d.금액;
-                else if (diffDays <= 20) weeks['3주차(8~14일)'] += d.금액;
-                else if (diffDays <= 27) weeks['4주차(15~21일)'] += d.금액;
-                else weeks['5주차(22일~)'] += d.금액;
+                if (diffDays <= 6) weeks['1주차(25~31일)'] += Math.abs(d.금액);
+                else if (diffDays <= 13) weeks['2주차(1~7일)'] += Math.abs(d.금액);
+                else if (diffDays <= 20) weeks['3주차(8~14일)'] += Math.abs(d.금액);
+                else if (diffDays <= 27) weeks['4주차(15~21일)'] += Math.abs(d.금액);
+                else weeks['5주차(22일~)'] += Math.abs(d.금액);
             });
 
             const total = Object.values(weeks).reduce((a, b) => a + b, 0);
@@ -613,7 +643,7 @@
                 return `
                     <div class="p-2.5 bg-gray-50 rounded-xl space-y-1 text-center">
                         <div class="font-bold text-gray-600">${wName}</div>
-                        <div class="text-teal-700 font-extrabold">${amount.toLocaleString()}원</div>
+                        <div class="text-purple-700 font-extrabold">${amount.toLocaleString()}원</div>
                         <div class="text-[10px] text-gray-400">${pct}%</div>
                     </div>
                 `;
@@ -630,14 +660,14 @@
             const prevMonthFiltered = allData.filter(d => {
                 if (!d.거래일 || d.수입지출 !== '지출') return false;
                 const cycle = getWepleCycleMonth(d.거래일);
-                return cycle.y === prevY && cycle.m === prevM;
+                return cycle.y === prevY && cycle.m === prevM && isNotFuture(d.거래일);
             });
 
             const currentMap = {};
-            currentMonthFiltered.forEach(d => { currentMap[d.분류] = (currentMap[d.분류] || 0) + d.금액; });
+            currentMonthFiltered.forEach(d => { currentMap[d.분류] = (currentMap[d.분류] || 0) + Math.abs(d.금액); });
 
             const prevMap = {};
-            prevMonthFiltered.forEach(d => { prevMap[d.분류] = (prevMap[d.분류] || 0) + d.금액; });
+            prevMonthFiltered.forEach(d => { prevMap[d.분류] = (prevMap[d.분류] || 0) + Math.abs(d.금액); });
 
             const allCats = [...new Set([...Object.keys(currentMap), ...Object.keys(prevMap)])];
             if (allCats.length === 0) {
@@ -683,7 +713,7 @@
             container.innerHTML = currentCategoryRanking.map((item, idx) => {
                 const pct = total > 0 ? ((item.amount / total) * 100).toFixed(1) : 0;
                 return `
-                    <div onclick="openSubcatModal('${item.cat}')" class="flex justify-between items-center p-2.5 bg-gray-50 hover:bg-teal-50/60 rounded-xl cursor-pointer transition">
+                    <div onclick="openSubcatModal('${item.cat}')" class="flex justify-between items-center p-2.5 bg-gray-50 hover:bg-purple-50/60 rounded-xl cursor-pointer transition">
                         <div class="flex items-center space-x-2">
                             <span class="w-5 text-gray-400 font-bold">${idx + 1}</span>
                             <span class="font-semibold text-gray-700 underline decoration-dotted underline-offset-4">${item.cat}</span>
@@ -714,14 +744,14 @@
             const categoryName = activeModalCategory;
             const monthFiltered = allData.filter(d => {
                 if (!d.거래일 || d.수입지출 !== '지출' || d.분류 !== categoryName) return false;
-                return isDateInCurrentCycle(d.거래일);
+                return isDateInCurrentCycle(d.거래일) && isNotFuture(d.거래일);
             });
 
             const subcatMap = {};
             monthFiltered.forEach(d => {
                 const sub = d.하위분류 || '기타';
                 if (!subcatMap[sub]) subcatMap[sub] = { total: 0, items: [] };
-                subcatMap[sub].total += d.금액;
+                subcatMap[sub].total += Math.abs(d.금액);
                 subcatMap[sub].items.push(d);
             });
 
@@ -738,13 +768,13 @@
                     <div class="p-3 bg-gray-50 rounded-xl space-y-2">
                         <div class="flex justify-between font-bold text-gray-800 border-b border-gray-200 pb-1.5">
                             <span>${subName}</span>
-                            <span class="text-teal-600">${data.total.toLocaleString()}원</span>
+                            <span class="text-purple-600">${data.total.toLocaleString()}원</span>
                         </div>
                         <div class="space-y-1">
                             ${data.items.map(i => `
                                 <div class="flex justify-between text-[11px] text-gray-500">
                                     <span>${i.거래일.slice(5)} \vert{} ${i.내역 || '기타'}</span>
-                                    <span class="font-medium text-gray-700">${i.금액.toLocaleString()}원</span>
+                                    <span class="font-medium text-gray-700">${Math.abs(i.금액).toLocaleString()}원</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -772,7 +802,7 @@
             const freqBox = document.getElementById('frequency-analysis-box');
 
             const filtered = allData.filter(d => {
-                const matchCycle = isDateInCurrentCycle(d.거래일);
+                const matchCycle = isDateInCurrentCycle(d.거래일) && isNotFuture(d.거래일);
                 const matchKeyword = (d.내역 && d.내역.toLowerCase().includes(keyword)) || (d.카드 && d.카드.toLowerCase().includes(keyword));
                 const matchCat = !catFilter || d.분류 === catFilter;
                 return matchCycle && matchKeyword && matchCat;
@@ -780,7 +810,7 @@
 
             if (keyword.length > 0) {
                 const keywordAllMatches = allData.filter(d => {
-                    return d.수입지출 === '지출' && ((d.내역 && d.내역.toLowerCase().includes(keyword)) || (d.카드 && d.카드.toLowerCase().includes(keyword)));
+                    return d.수입지출 === '지출' && isNotFuture(d.거래일) && ((d.내역 && d.내역.toLowerCase().includes(keyword)) || (d.카드 && d.카드.toLowerCase().includes(keyword)));
                 }).sort((a, b) => new Date(a.거래일) - new Date(b.거래일));
 
                 if (keywordAllMatches.length >= 2) {
@@ -792,7 +822,7 @@
                     }
                     const avgInterval = Math.round(totalDays / (keywordAllMatches.length - 1));
                     const lastDate = new Date(keywordAllMatches[keywordAllMatches.length - 1].거래일);
-                    const today = new Date();
+                    const today = new Date(TODAY_STR);
                     const diffFromLast = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
 
                     freqBox.classList.remove('hidden');
@@ -816,9 +846,9 @@
             tbody.innerHTML = filtered.map(item => `
                 <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
                     <td class="py-2.5 px-2 text-gray-500">${item.거래일}</td>
-                    <td class="py-2.5 px-2"><span class="px-2 py-0.5 bg-teal-50 text-teal-700 rounded text-[10px] font-medium">${item.분류}</span></td>
+                    <td class="py-2.5 px-2"><span class="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-medium">${item.분류}</span></td>
                     <td class="py-2.5 px-2 font-medium text-gray-800">${item.내역 || '-'}</td>
-                    <td class="py-2.5 px-2 text-right font-bold ${item.수입지출 === '수입' ? 'text-emerald-600' : 'text-pink-500'}">${item.수입지출 === '수입' ? '+' : '-'}${item.금액.toLocaleString()}원</td>
+                    <td class="py-2.5 px-2 text-right font-bold ${item.수입지출 === '수입' ? 'text-emerald-600' : 'text-pink-500'}">${item.수입지출 === '수입' ? '+' : '-'}${Math.abs(item.금액).toLocaleString()}원</td>
                     <td class="py-2.5 px-2 text-gray-400 text-[10px]">${item.카드 || ''}</td>
                 </tr>
             `).join('');
@@ -829,19 +859,19 @@
             document.getElementById('tab-analytics').classList.add('hidden');
             document.getElementById('tab-transactions').classList.add('hidden');
 
-            document.getElementById('nav-btn-calendar').className = "flex flex-col items-center text-gray-400 hover:text-teal-600 transition";
-            document.getElementById('nav-btn-analytics').className = "flex flex-col items-center text-gray-400 hover:text-teal-600 transition";
-            document.getElementById('nav-btn-transactions').className = "flex flex-col items-center text-gray-400 hover:text-teal-600 transition";
+            document.getElementById('nav-btn-calendar').className = "flex flex-col items-center text-gray-400 hover:text-purple-600 transition";
+            document.getElementById('nav-btn-analytics').className = "flex flex-col items-center text-gray-400 hover:text-purple-600 transition";
+            document.getElementById('nav-btn-transactions').className = "flex flex-col items-center text-gray-400 hover:text-purple-600 transition";
 
             if (tabName === 'calendar') {
                 document.getElementById('tab-calendar').classList.remove('hidden');
-                document.getElementById('nav-btn-calendar').className = "flex flex-col items-center text-teal-600 font-semibold transition";
+                document.getElementById('nav-btn-calendar').className = "flex flex-col items-center text-purple-600 font-semibold transition";
             } else if (tabName === 'analytics') {
                 document.getElementById('tab-analytics').classList.remove('hidden');
-                document.getElementById('nav-btn-analytics').className = "flex flex-col items-center text-teal-600 font-semibold transition";
+                document.getElementById('nav-btn-analytics').className = "flex flex-col items-center text-purple-600 font-semibold transition";
             } else if (tabName === 'transactions') {
                 document.getElementById('tab-transactions').classList.remove('hidden');
-                document.getElementById('nav-btn-transactions').className = "flex flex-col items-center text-teal-600 font-semibold transition";
+                document.getElementById('nav-btn-transactions').className = "flex flex-col items-center text-purple-600 font-semibold transition";
             }
         }
     </script>
