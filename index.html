@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome 아이콘 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- sql.js (SQLite WebAssembly 엔진) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; }
         .weple-header { background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%); }
@@ -25,8 +27,8 @@
             </div>
             <h1 class="text-xl font-bold text-gray-800 mb-6">위플머니 가계부 분석</h1>
             <label class="block w-full py-4 px-6 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl cursor-pointer transition shadow-lg hover:shadow-teal-200">
-                <i class="fa-solid fa-file-csv mr-2"></i> CSV 업로드
-                <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+                <i class="fa-solid fa-file-arrow-up mr-2"></i> CSV 또는 백업파일 업로드
+                <input type="file" id="file-input" accept=".csv, .sqlite" class="hidden">
             </label>
         </div>
     </div>
@@ -44,7 +46,7 @@
                 <div class="flex items-center space-x-3">
                     <label class="cursor-pointer bg-teal-700 hover:bg-teal-800 text-xs px-3 py-1.5 rounded-lg transition text-white shadow">
                         <i class="fa-solid fa-sync-alt mr-1"></i> 파일 변경
-                        <input type="file" id="csv-file-change" accept=".csv" class="hidden">
+                        <input type="file" id="file-change" accept=".csv, .sqlite" class="hidden">
                     </label>
                 </div>
             </div>
@@ -195,41 +197,135 @@
         let activeModalCategory = null;
         let modalSubcatSortOrder = 'desc';
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedCSV = localStorage.getItem('weple_csv_data');
-            if (savedCSV) {
-                parseCSV(savedCSV);
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedData = localStorage.getItem('weple_raw_data');
+            const savedType = localStorage.getItem('weple_file_type');
+            if (savedData) {
+                if (savedType === 'sqlite') {
+                    await parseSqliteBase64(savedData);
+                } else {
+                    parseCSV(savedData);
+                }
                 document.getElementById('upload-screen').classList.add('hidden');
                 document.getElementById('main-dashboard').classList.remove('hidden');
                 initDashboard();
             }
         });
 
-        document.getElementById('csv-file-input').addEventListener('change', handleFileUpload);
-        document.getElementById('csv-file-change').addEventListener('change', handleFileUpload);
+        document.getElementById('file-input').addEventListener('change', handleFileSelect);
+        document.getElementById('file-change').addEventListener('change', handleFileSelect);
 
-        function handleFileUpload(e) {
+        async function handleFileSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.readAsText(file, 'euc-kr');
-            reader.onload = function(evt) {
-                try {
+            if (file.name.endsWith('.sqlite')) {
+                const reader = new FileReader();
+                reader.readAsArrayBuffer(file);
+                reader.onload = async function(evt) {
+                    const buffer = evt.target.result;
+                    // Base64로 변환하여 localStorage에 저장
+                    const base64 = arrayBufferToBase64(buffer);
+                    localStorage.setItem('weple_raw_data', base64);
+                    localStorage.setItem('weple_file_type', 'sqlite');
+                    
+                    await parseSqliteBuffer(buffer);
+                    document.getElementById('upload-screen').classList.add('hidden');
+                    document.getElementById('main-dashboard').classList.remove('hidden');
+                    initDashboard();
+                };
+            } else {
+                const reader = new FileReader();
+                reader.readAsText(file, 'euc-kr');
+                reader.onload = function(evt) {
                     const text = evt.target.result;
-                    localStorage.setItem('weple_csv_data', text);
+                    localStorage.setItem('weple_raw_data', text);
+                    localStorage.setItem('weple_file_type', 'csv');
+                    
                     parseCSV(text);
                     document.getElementById('upload-screen').classList.add('hidden');
                     document.getElementById('main-dashboard').classList.remove('hidden');
                     initDashboard();
-                } catch (err) {
-                    alert('CSV 파싱 중 오류가 발생했습니다.');
-                    console.error(err);
-                }
-            };
+                };
+            }
         }
 
-        // 텍스트 정제 함수 (ert{} 등 불필요한 패턴 제거)
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binary_string = window.atob(base64);
+            const len = binary_string.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binary_string.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        async function parseSqliteBase64(base64) {
+            const buffer = base64ToArrayBuffer(base64);
+            await parseSqliteBuffer(buffer);
+        }
+
+        async function parseSqliteBuffer(buffer) {
+            const SQL = await initSqlJs({
+                locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+            });
+            const db = new SQL.Database(new Uint8Array(buffer));
+            
+            const query = `
+                SELECT 
+                    t.ZDEALDATESTRING as 거래일,
+                    t.ZAMOUNT as 금액,
+                    t.ZDEPOSIT as 수입여부,
+                    c.ZNAME as 분류,
+                    sub.ZNAME as 하위분류,
+                    t.ZTEXT as 내역,
+                    card.ZNAME as 카드
+                FROM ZABSTRACTSTATEMENT t
+                LEFT JOIN ZICATEGORY c ON t.ZCATEGORYKEY = c.Z_PK
+                LEFT JOIN ZICATEGORY sub ON t.ZSUBCATEGORYKEY = sub.Z_PK
+                LEFT JOIN ZCARD card ON t.ZCARDKEY = card.Z_PK
+                WHERE t.ZDELETEDMARK IS NULL OR t.ZDELETEDMARK = 0
+            `;
+            
+            const stmt = db.prepare(query);
+            allData = [];
+            while (stmt.step()) {
+                const row = stmt.getAsObject();
+                const isDeposit = row.수입여부 === 1;
+                allData.push({
+                    거래일: row.거래일 || '',
+                    수입지출: isDeposit ? '수입' : '지출',
+                    금액: Math.abs(row.금액 || 0),
+                    분류: cleanText(row.분류) || '미분류',
+                    하위분류: cleanText(row.하위분류),
+                    내역: cleanText(row.내역) || '',
+                    지불: isDeposit ? '현금' : '카드',
+                    카드: cleanText(row.카드) || '기본'
+                });
+            }
+            stmt.free();
+
+            if (allData.length > 0) {
+                const dates = allData.map(d => d.거래일).filter(d => d && d.length >= 7).sort();
+                if (dates.length > 0) {
+                    const latest = dates[dates.length - 1];
+                    const parts = latest.split('-');
+                    currentYear = parseInt(parts[0]);
+                    currentMonth = parseInt(parts[1]);
+                }
+            }
+        }
+
         function cleanText(text) {
             if (!text || text === 'NaN') return '기타';
             return text.replace(/ert\{[^}]*\}/g, '').trim() || '기타';
@@ -400,7 +496,7 @@
                         <span class="text-xs px-2 py-1 rounded-md bg-white border border-gray-200 text-teal-700 font-medium">${item.분류}</span>
                         <div>
                             <div class="text-xs font-bold text-gray-800">${item.내역 || '기타'}</div>
-                            <div class="text-[10px] text-gray-400">${item.지불} / ${item.카드}</div>
+                            <div class="text-[10px] text-gray-400">${item.지불 || ''} / ${item.카드 || ''}</div>
                         </div>
                     </div>
                     <div class="text-xs font-bold ${item.수입지출 === '수입' ? 'text-emerald-600' : 'text-pink-500'}">
@@ -453,7 +549,6 @@
             renderMoMComparison(monthFiltered);
         }
 
-        // 주차별 지출 패턴 분석 렌더링
         function renderWeeklyPattern(monthFiltered) {
             const container = document.getElementById('weekly-pattern-container');
             const weeks = { '1주차(1~7일)': 0, '2주차(8~14일)': 0, '3주차(15~21일)': 0, '4주차(22~28일)': 0, '5주차(29일~)': 0 };
@@ -481,11 +576,9 @@
             }).join('');
         }
 
-        // 전월 대비 카테고리별 증감 비교 렌더링
         function renderMoMComparison(currentMonthFiltered) {
             const container = document.getElementById('mom-comparison-container');
             
-            // 전 달 계산
             let prevY = currentYear;
             let prevM = currentMonth - 1;
             if (prevM < 1) { prevM = 12; prevY--; }
@@ -596,7 +689,7 @@
             const contentContainer = document.getElementById('modal-subcat-content');
 
             if (sortedSubs.length === 0) {
-                contentContainer.innerHTML = `<p class="text-center text-gray-400 py-6">해당 카테고리의 지출 내역이 없습니다.</p>";`;
+                contentContainer.innerHTML = `<p class="text-center text-gray-400 py-6">해당 카테고리의 지출 내역이 없습니다.</p>`;
             } else {
                 contentContainer.innerHTML = sortedSubs.map(([subName, data]) => `
                     <div class="p-3 bg-gray-50 rounded-xl space-y-2">
@@ -630,7 +723,6 @@
         document.getElementById('search-keyword').addEventListener('input', renderTransactionsTable);
         document.getElementById('filter-category').addEventListener('change', renderTransactionsTable);
 
-        // 키워드 주기 분석 기능 포함 전체 내역 렌더링
         function renderTransactionsTable() {
             const keyword = document.getElementById('search-keyword').value.toLowerCase().trim();
             const catFilter = document.getElementById('filter-category').value;
@@ -643,7 +735,6 @@
                 return matchMonth && matchKeyword && matchCat;
             });
 
-            // 키워드 검색 시 전체 기간을 대상으로 주기(Frequency) 분석 수행
             if (keyword.length > 0) {
                 const keywordAllMatches = allData.filter(d => {
                     return d.수입지출 === '지출' && ((d.내역 && d.내역.toLowerCase().includes(keyword)) || (d.카드 && d.카드.toLowerCase().includes(keyword)));
@@ -685,7 +776,7 @@
                     <td class="py-2.5 px-2"><span class="px-2 py-0.5 bg-teal-50 text-teal-700 rounded text-[10px] font-medium">${item.분류}</span></td>
                     <td class="py-2.5 px-2 font-medium text-gray-800">${item.내역 || '-'}</td>
                     <td class="py-2.5 px-2 text-right font-bold ${item.수입지출 === '수입' ? 'text-emerald-600' : 'text-pink-500'}">${item.수입지출 === '수입' ? '+' : '-'}${item.금액.toLocaleString()}원</td>
-                    <td class="py-2.5 px-2 text-gray-400 text-[10px]">${item.카드}</td>
+                    <td class="py-2.5 px-2 text-gray-400 text-[10px]">${item.카드 || ''}</td>
                 </tr>
             `).join('');
         }
