@@ -17,7 +17,7 @@
 </head>
 <body class="text-gray-800 pb-20">
 
-    <!-- 파일 업로드 화면 (데이터가 없을 때만 노출) -->
+    <!-- 파일 업로드 화면 -->
     <div id="upload-screen" class="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-50 to-teal-100">
         <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-teal-100">
             <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
@@ -49,7 +49,7 @@
                 </div>
             </div>
 
-            <!-- 요약 KPI 카드 (수입 / 지출) -->
+            <!-- 요약 KPI 카드 -->
             <div class="max-w-4xl mx-auto grid grid-cols-2 gap-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
                 <div>
                     <span class="text-xs text-teal-100 font-medium">이번달 수입</span>
@@ -63,7 +63,8 @@
         </header>
 
         <!-- 탭 콘텐츠 영역 -->
-        <main class="max-w-4xl mx-auto p-4 -mt-2">
+        <main class="max-w-4xl mx-auto p-4 -mt-2 space-y-4">
+            
             <!-- 1. 캘린더 뷰 -->
             <section id="tab-calendar" class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
@@ -87,12 +88,14 @@
             <!-- 2. 통계/인사이트 뷰 -->
             <section id="tab-analytics" class="space-y-4 hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- 도넛 차트 -->
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                         <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-pie text-teal-500 mr-1.5"></i> 카테고리별 지출 비중</h3>
                         <div class="relative h-64 flex items-center justify-center">
                             <canvas id="categoryPieChart"></canvas>
                         </div>
                     </div>
+                    <!-- 분류별 순위 -->
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                         <h3 class="font-bold text-gray-700 text-sm mb-1"><i class="fa-solid fa-chart-bar text-teal-500 mr-1.5"></i> 분류별 지출 순위</h3>
                         <p class="text-[11px] text-gray-400 mb-3">카테고리를 누르면 하위 분류 상세 내역을 볼 수 있습니다.</p>
@@ -103,17 +106,33 @@
                         <div id="category-ranking-list" class="space-y-2 max-h-52 overflow-y-auto pr-1 text-xs"></div>
                     </div>
                 </div>
+
+                <!-- 추가 인사이트 1: 주차별 지출 패턴 -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-calendar-week text-teal-500 mr-1.5"></i> 주차별 지출 패턴 분석</h3>
+                    <div id="weekly-pattern-container" class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs"></div>
+                </div>
+
+                <!-- 추가 인사이트 2: 전월 대비 카테고리 증감 비교 -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-line text-teal-500 mr-1.5"></i> 전월 대비 카테고리별 지출 증감</h3>
+                    <div id="mom-comparison-container" class="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs"></div>
+                </div>
             </section>
 
             <!-- 3. 전체 내역 및 검색 뷰 -->
             <section id="tab-transactions" class="space-y-4 hidden">
-                <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
-                    <div class="flex flex-col sm:flex-row justify-between gap-2 mb-3">
-                        <input type="text" id="search-keyword" placeholder="가맹점 또는 내역 검색..." class="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-teal-500 w-full sm:w-64">
+                <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 space-y-3">
+                    <div class="flex flex-col sm:flex-row justify-between gap-2">
+                        <input type="text" id="search-keyword" placeholder="가맹점/내역 검색 (예: 렌즈, 쿠팡)..." class="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-teal-500 w-full sm:w-72">
                         <select id="filter-category" class="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-teal-500">
                             <option value="">모든 분류 보기</option>
                         </select>
                     </div>
+                    
+                    <!-- 키워드 주기 분석 결과 박스 -->
+                    <div id="frequency-analysis-box" class="hidden p-3 bg-teal-50 border border-teal-200 rounded-xl text-xs text-teal-900 space-y-1"></div>
+
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
                             <thead>
@@ -154,7 +173,13 @@
         <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-gray-100 space-y-4">
             <div class="flex justify-between items-center border-b border-gray-100 pb-3">
                 <h3 id="modal-category-title" class="font-bold text-gray-800 text-sm">카테고리 상세</h3>
-                <button onclick="closeSubcatModal()" class="text-gray-400 hover:text-gray-600 text-sm p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+                <div class="flex items-center space-x-2">
+                    <div class="space-x-1">
+                        <button onclick="sortSubcatModal('desc')" class="text-[10px] bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2 py-0.5 rounded font-medium transition">높은순</button>
+                        <button onclick="sortSubcatModal('asc')" class="text-[10px] bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2 py-0.5 rounded font-medium transition">낮은순</button>
+                    </div>
+                    <button onclick="closeSubcatModal()" class="text-gray-400 hover:text-gray-600 text-sm p-1 ml-2"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
             </div>
             <div id="modal-subcat-content" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs"></div>
         </div>
@@ -167,8 +192,9 @@
         let selectedDateStr = null;
         let pieChartInstance = null;
         let currentCategoryRanking = [];
+        let activeModalCategory = null;
+        let modalSubcatSortOrder = 'desc';
 
-        // 앱 시작 시 localStorage 확인
         window.addEventListener('DOMContentLoaded', () => {
             const savedCSV = localStorage.getItem('weple_csv_data');
             if (savedCSV) {
@@ -191,7 +217,7 @@
             reader.onload = function(evt) {
                 try {
                     const text = evt.target.result;
-                    localStorage.setItem('weple_csv_data', text); // 브라우저 저장소에 영구 보관
+                    localStorage.setItem('weple_csv_data', text);
                     parseCSV(text);
                     document.getElementById('upload-screen').classList.add('hidden');
                     document.getElementById('main-dashboard').classList.remove('hidden');
@@ -201,6 +227,12 @@
                     console.error(err);
                 }
             };
+        }
+
+        // 텍스트 정제 함수 (ert{} 등 불필요한 패턴 제거)
+        function cleanText(text) {
+            if (!text || text === 'NaN') return '기타';
+            return text.replace(/ert\{[^}]*\}/g, '').trim() || '기타';
         }
 
         function parseCSV(text) {
@@ -217,9 +249,9 @@
                         거래일: row[1]?.trim(),
                         수입지출: row[2]?.trim(),
                         금액: parseInt(row[3]?.replace(/,/g, '').trim()) || 0,
-                        분류: row[4]?.trim() || '미분류',
-                        하위분류: row[5]?.trim() && row[5]?.trim() !== 'NaN' ? row[5]?.trim() : '기타',
-                        내역: row[6]?.trim() || '',
+                        분류: cleanText(row[4]) || '미분류',
+                        하위분류: cleanText(row[5]),
+                        내역: cleanText(row[6]) || '',
                         지불: row[7]?.trim(),
                         카드: row[8]?.trim(),
                         메모: row[9]?.trim()
@@ -416,6 +448,89 @@
                     }
                 }
             });
+
+            renderWeeklyPattern(monthFiltered);
+            renderMoMComparison(monthFiltered);
+        }
+
+        // 주차별 지출 패턴 분석 렌더링
+        function renderWeeklyPattern(monthFiltered) {
+            const container = document.getElementById('weekly-pattern-container');
+            const weeks = { '1주차(1~7일)': 0, '2주차(8~14일)': 0, '3주차(15~21일)': 0, '4주차(22~28일)': 0, '5주차(29일~)': 0 };
+
+            monthFiltered.forEach(d => {
+                const day = parseInt(d.거래일.split('-')[2]);
+                if (day <= 7) weeks['1주차(1~7일)'] += d.금액;
+                else if (day <= 14) weeks['2주차(8~14일)'] += d.금액;
+                else if (day <= 21) weeks['3주차(15~21일)'] += d.금액;
+                else if (day <= 28) weeks['4주차(22~28일)'] += d.금액;
+                else weeks['5주차(29일~)'] += d.금액;
+            });
+
+            const total = Object.values(weeks).reduce((a, b) => a + b, 0);
+
+            container.innerHTML = Object.entries(weeks).map(([wName, amount]) => {
+                const pct = total > 0 ? ((amount / total) * 100).toFixed(1) : 0;
+                return `
+                    <div class="p-2.5 bg-gray-50 rounded-xl space-y-1 text-center">
+                        <div class="font-bold text-gray-600">${wName}</div>
+                        <div class="text-teal-700 font-extrabold">${amount.toLocaleString()}원</div>
+                        <div class="text-[10px] text-gray-400">${pct}%</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 전월 대비 카테고리별 증감 비교 렌더링
+        function renderMoMComparison(currentMonthFiltered) {
+            const container = document.getElementById('mom-comparison-container');
+            
+            // 전 달 계산
+            let prevY = currentYear;
+            let prevM = currentMonth - 1;
+            if (prevM < 1) { prevM = 12; prevY--; }
+
+            const prevMonthFiltered = allData.filter(d => {
+                if (!d.거래일 || d.수입지출 !== '지출') return false;
+                const [y, m] = d.거래일.split('-').map(Number);
+                return y === prevY && m === prevM;
+            });
+
+            const currentMap = {};
+            currentMonthFiltered.forEach(d => { currentMap[d.분류] = (currentMap[d.분류] || 0) + d.금액; });
+
+            const prevMap = {};
+            prevMonthFiltered.forEach(d => { prevMap[d.분류] = (prevMap[d.분류] || 0) + d.금액; });
+
+            const allCats = [...new Set([...Object.keys(currentMap), ...Object.keys(prevMap)])];
+            if (allCats.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-400 py-4">비교할 지난달 데이터가 없습니다.</p>`;
+                return;
+            }
+
+            const comparison = allCats.map(cat => {
+                const cur = currentMap[cat] || 0;
+                const prev = prevMap[cat] || 0;
+                const diff = cur - prev;
+                return { cat, cur, prev, diff };
+            }).sort((a, b) => b.cur - a.cur);
+
+            container.innerHTML = comparison.map(item => {
+                const sign = item.diff > 0 ? '+' : '';
+                const color = item.diff > 0 ? 'text-pink-500' : (item.diff < 0 ? 'text-emerald-600' : 'text-gray-400');
+                return `
+                    <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl">
+                        <div>
+                            <span class="font-bold text-gray-800">${item.cat}</span>
+                            <div class="text-[10px] text-gray-400">지난달: ${item.prev.toLocaleString()}원</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-gray-800">${item.cur.toLocaleString()}원</div>
+                            <div class="text-[10px] font-semibold ${color}">${sign}${item.diff.toLocaleString()}원</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function sortCategoryList(order) {
@@ -445,10 +560,21 @@
             }).join('');
         }
 
-        // 4번 요구: 카테고리 클릭 시 하위 분류 모달 열기
         function openSubcatModal(categoryName) {
+            activeModalCategory = categoryName;
+            modalSubcatSortOrder = 'desc';
             document.getElementById('modal-category-title').innerText = `'${categoryName}' 하위 분류 상세`;
-            
+            renderSubcatModalContent();
+            document.getElementById('subcat-modal').classList.remove('hidden');
+        }
+
+        function sortSubcatModal(order) {
+            modalSubcatSortOrder = order;
+            renderSubcatModalContent();
+        }
+
+        function renderSubcatModalContent() {
+            const categoryName = activeModalCategory;
             const monthFiltered = allData.filter(d => {
                 if (!d.거래일 || d.수입지출 !== '지출' || d.분류 !== categoryName) return false;
                 const [y, m] = d.거래일.split('-').map(Number);
@@ -463,11 +589,14 @@
                 subcatMap[sub].items.push(d);
             });
 
-            const sortedSubs = Object.entries(subcatMap).sort((a, b) => b[1].total - a[1].total);
+            const sortedSubs = Object.entries(subcatMap).sort((a, b) => {
+                return modalSubcatSortOrder === 'desc' ? b[1].total - a[1].total : a[1].total - b[1].total;
+            });
+
             const contentContainer = document.getElementById('modal-subcat-content');
 
             if (sortedSubs.length === 0) {
-                contentContainer.innerHTML = `<p class="text-center text-gray-400 py-6">해당 카테고리의 지출 내역이 없습니다.</p>`;
+                contentContainer.innerHTML = `<p class="text-center text-gray-400 py-6">해당 카테고리의 지출 내역이 없습니다.</p>";`;
             } else {
                 contentContainer.innerHTML = sortedSubs.map(([subName, data]) => `
                     <div class="p-3 bg-gray-50 rounded-xl space-y-2">
@@ -486,8 +615,6 @@
                     </div>
                 `).join('');
             }
-
-            document.getElementById('subcat-modal').classList.remove('hidden');
         }
 
         function closeSubcatModal() {
@@ -503,9 +630,11 @@
         document.getElementById('search-keyword').addEventListener('input', renderTransactionsTable);
         document.getElementById('filter-category').addEventListener('change', renderTransactionsTable);
 
+        // 키워드 주기 분석 기능 포함 전체 내역 렌더링
         function renderTransactionsTable() {
-            const keyword = document.getElementById('search-keyword').value.toLowerCase();
+            const keyword = document.getElementById('search-keyword').value.toLowerCase().trim();
             const catFilter = document.getElementById('filter-category').value;
+            const freqBox = document.getElementById('frequency-analysis-box');
 
             const filtered = allData.filter(d => {
                 const matchMonth = d.거래일 && d.거래일.startsWith(`${currentYear}-${String(currentMonth).padStart(2, '0')}`);
@@ -513,6 +642,36 @@
                 const matchCat = !catFilter || d.분류 === catFilter;
                 return matchMonth && matchKeyword && matchCat;
             });
+
+            // 키워드 검색 시 전체 기간을 대상으로 주기(Frequency) 분석 수행
+            if (keyword.length > 0) {
+                const keywordAllMatches = allData.filter(d => {
+                    return d.수입지출 === '지출' && ((d.내역 && d.내역.toLowerCase().includes(keyword)) || (d.카드 && d.카드.toLowerCase().includes(keyword)));
+                }).sort((a, b) => new Date(a.거래일) - new Date(b.거래일));
+
+                if (keywordAllMatches.length >= 2) {
+                    let totalDays = 0;
+                    for (let i = 1; i < keywordAllMatches.length; i++) {
+                        const d1 = new Date(keywordAllMatches[i-1].거래일);
+                        const d2 = new Date(keywordAllMatches[i].거래일);
+                        totalDays += Math.abs(d2 - d1) / (1000 * 60 * 60 * 24);
+                    }
+                    const avgInterval = Math.round(totalDays / (keywordAllMatches.length - 1));
+                    const lastDate = new Date(keywordAllMatches[keywordAllMatches.length - 1].거래일);
+                    const today = new Date();
+                    const diffFromLast = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+
+                    freqBox.classList.remove('hidden');
+                    freqBox.innerHTML = `
+                        <div class="font-bold"><i class="fa-solid fa-rotate mr-1"></i> '${keyword}' 소비 주기 분석</div>
+                        <div>총 ${keywordAllMatches.length}회 구매 | 평균 약 <b>${avgInterval}일</b> 주기로 소비하고 있습니다. (마지막 구매일로부터 ${diffFromLast}일 경과)</div>
+                    `;
+                } else {
+                    freqBox.classList.add('hidden');
+                }
+            } else {
+                freqBox.classList.add('hidden');
+            }
 
             const tbody = document.getElementById('full-transaction-tbody');
             if (filtered.length === 0) {
