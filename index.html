@@ -17,24 +17,21 @@
 </head>
 <body class="text-gray-800 pb-20">
 
-    <!-- 파일 업로드 전용 모달 또는 상단 배너 -->
+    <!-- 파일 업로드 화면 (데이터가 없을 때만 노출) -->
     <div id="upload-screen" class="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-50 to-teal-100">
         <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-teal-100">
             <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
                 <i class="fa-solid fa-wallet"></i>
             </div>
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">위플머니 가계부 분석기</h1>
-            <p class="text-sm text-gray-500 mb-6">남편분이 추출하신 위플머니 CSV 파일을 업로드하여<br>스마트한 캘린더와 소비 인사이트를 확인하세요!</p>
-            
+            <h1 class="text-xl font-bold text-gray-800 mb-6">위플머니 가계부 분석</h1>
             <label class="block w-full py-4 px-6 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl cursor-pointer transition shadow-lg hover:shadow-teal-200">
-                <i class="fa-solid fa-file-csv mr-2"></i> 위플머니 CSV 업로드하기
+                <i class="fa-solid fa-file-csv mr-2"></i> CSV 업로드
                 <input type="file" id="csv-file-input" accept=".csv" class="hidden">
             </label>
-            <p class="text-xs text-gray-400 mt-4">* 업로드된 데이터는 외부로 전송되지 않고 브라우저 내에서만 안전하게 처리됩니다.</p>
         </div>
     </div>
 
-    <!-- 메인 대시보드 화면 (초기엔 숨김) -->
+    <!-- 메인 대시보드 화면 -->
     <div id="main-dashboard" class="hidden">
         <!-- 상단 위플머니 시그니처 헤더 -->
         <header class="weple-header text-white px-4 pt-4 pb-6 shadow-md">
@@ -70,15 +67,12 @@
             <!-- 1. 캘린더 뷰 -->
             <section id="tab-calendar" class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
-                    <!-- 요일 헤더 -->
                     <div class="grid grid-cols-7 text-center font-semibold text-xs text-gray-400 mb-2">
                         <span class="text-red-500">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="text-blue-500">토</span>
                     </div>
-                    <!-- 날짜 그리드 -->
                     <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
                 </div>
 
-                <!-- 선택한 날짜 상세 내역 -->
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
                         <h3 id="selected-date-title" class="font-bold text-gray-700 text-sm">날짜를 선택하세요</h3>
@@ -90,7 +84,7 @@
                 </div>
             </section>
 
-            <!-- 2. 분석/인사이트 뷰 (숨김 기본) -->
+            <!-- 2. 통계/인사이트 뷰 -->
             <section id="tab-analytics" class="space-y-4 hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
@@ -100,17 +94,18 @@
                         </div>
                     </div>
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-gray-700 text-sm mb-3"><i class="fa-solid fa-chart-bar text-teal-500 mr-1.5"></i> 분류별 지출 순위 (오름차순/내림차순)</h3>
+                        <h3 class="font-bold text-gray-700 text-sm mb-1"><i class="fa-solid fa-chart-bar text-teal-500 mr-1.5"></i> 분류별 지출 순위</h3>
+                        <p class="text-[11px] text-gray-400 mb-3">카테고리를 누르면 하위 분류 상세 내역을 볼 수 있습니다.</p>
                         <div class="flex justify-end mb-2 space-x-2">
                             <button onclick="sortCategoryList('desc')" class="text-xs bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2.5 py-1 rounded font-medium transition">높은순</button>
-                            <button onclick="sortCategoryList('asc')" class="text-xs bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2.5 py-1 rounded font-medium transition">낮은순(오름차순)</button>
+                            <button onclick="sortCategoryList('asc')" class="text-xs bg-gray-100 hover:bg-teal-50 hover:text-teal-600 px-2.5 py-1 rounded font-medium transition">낮은순</button>
                         </div>
                         <div id="category-ranking-list" class="space-y-2 max-h-52 overflow-y-auto pr-1 text-xs"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- 3. 전체 내역 및 검색 뷰 (숨김 기본) -->
+            <!-- 3. 전체 내역 및 검색 뷰 -->
             <section id="tab-transactions" class="space-y-4 hidden">
                 <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                     <div class="flex flex-col sm:flex-row justify-between gap-2 mb-3">
@@ -137,7 +132,7 @@
             </section>
         </main>
 
-        <!-- 하단 네비게이션바 (위플머니 스타일 모방) -->
+        <!-- 하단 네비게이션바 -->
         <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg py-2 px-6 flex justify-around items-center max-w-md mx-auto rounded-t-2xl z-50">
             <button onclick="switchTab('calendar')" id="nav-btn-calendar" class="flex flex-col items-center text-teal-600 font-semibold transition">
                 <i class="fa-solid fa-calendar-days text-lg mb-0.5"></i>
@@ -154,14 +149,36 @@
         </nav>
     </div>
 
+    <!-- 하위 분류 모달 -->
+    <div id="subcat-modal" class="fixed inset-0 bg-black/40 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-gray-100 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h3 id="modal-category-title" class="font-bold text-gray-800 text-sm">카테고리 상세</h3>
+                <button onclick="closeSubcatModal()" class="text-gray-400 hover:text-gray-600 text-sm p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div id="modal-subcat-content" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs"></div>
+        </div>
+    </div>
+
     <script>
         let allData = [];
         let currentYear = 2026;
-        let currentMonth = 9; // 디폴트 9월
+        let currentMonth = 9;
         let selectedDateStr = null;
         let pieChartInstance = null;
+        let currentCategoryRanking = [];
 
-        // CSV 파일 업로드 이벤트 리스너
+        // 앱 시작 시 localStorage 확인
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedCSV = localStorage.getItem('weple_csv_data');
+            if (savedCSV) {
+                parseCSV(savedCSV);
+                document.getElementById('upload-screen').classList.add('hidden');
+                document.getElementById('main-dashboard').classList.remove('hidden');
+                initDashboard();
+            }
+        });
+
         document.getElementById('csv-file-input').addEventListener('change', handleFileUpload);
         document.getElementById('csv-file-change').addEventListener('change', handleFileUpload);
 
@@ -170,16 +187,17 @@
             if (!file) return;
 
             const reader = new FileReader();
-            // EUC-KR 및 UTF-8 대응
             reader.readAsText(file, 'euc-kr');
             reader.onload = function(evt) {
                 try {
-                    parseCSV(evt.target.result);
+                    const text = evt.target.result;
+                    localStorage.setItem('weple_csv_data', text); // 브라우저 저장소에 영구 보관
+                    parseCSV(text);
                     document.getElementById('upload-screen').classList.add('hidden');
                     document.getElementById('main-dashboard').classList.remove('hidden');
                     initDashboard();
                 } catch (err) {
-                    alert('CSV 파싱 중 오류가 발생했습니다. 올바른 위플머니 CSV 파일인지 확인해주세요.');
+                    alert('CSV 파싱 중 오류가 발생했습니다.');
                     console.error(err);
                 }
             };
@@ -192,7 +210,6 @@
             allData = [];
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
-                // 간단한 CSV 파싱 (따옴표 고려)
                 const row = parseCSVRow(lines[i]);
                 if (row.length >= headers.length) {
                     allData.push({
@@ -201,7 +218,7 @@
                         수입지출: row[2]?.trim(),
                         금액: parseInt(row[3]?.replace(/,/g, '').trim()) || 0,
                         분류: row[4]?.trim() || '미분류',
-                        하위분류: row[5]?.trim(),
+                        하위분류: row[5]?.trim() && row[5]?.trim() !== 'NaN' ? row[5]?.trim() : '기타',
                         내역: row[6]?.trim() || '',
                         지불: row[7]?.trim(),
                         카드: row[8]?.trim(),
@@ -210,7 +227,6 @@
                 }
             }
 
-            // 가장 최신 데이터의 연/월을 초기값으로 설정
             if (allData.length > 0) {
                 const dates = allData.map(d => d.거래일).filter(d => d && d.length >= 7).sort();
                 if (dates.length > 0) {
@@ -248,12 +264,10 @@
             renderAnalytics();
             renderTransactionsTable();
             
-            // 오늘 날짜 또는 해당 월의 첫 날 자동 선택
             const defaultDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
             selectDate(defaultDate);
         }
 
-        // 월 이동 버튼
         document.getElementById('prev-month').addEventListener('click', () => {
             currentMonth--;
             if (currentMonth < 1) { currentMonth = 12; currentYear--; }
@@ -275,7 +289,6 @@
         function updateMonthHeader() {
             document.getElementById('current-month-title').innerText = `${currentYear}년 ${currentMonth}월`;
             
-            // 이번 달 수입/지출 계산
             const monthFiltered = allData.filter(d => {
                 if (!d.거래일) return false;
                 const [y, m] = d.거래일.split('-').map(Number);
@@ -289,7 +302,6 @@
             document.getElementById('summary-expense').innerText = expense.toLocaleString() + '원';
         }
 
-        // 캘린더 렌더링
         function renderCalendar() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
@@ -297,7 +309,6 @@
             const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay();
             const lastDay = new Date(currentYear, currentMonth, 0).getDate();
 
-            // 해당 월 데이터 집계 (날짜별 수입/지출)
             const dailyMap = {};
             allData.forEach(d => {
                 if (!d.거래일) return;
@@ -309,17 +320,15 @@
                 }
             });
 
-            // 빈 칸 채우기 (전달 잔여)
             for (let i = 0; i < firstDayIndex; i++) {
                 grid.innerHTML += `<div class="p-1 h-20 bg-gray-50/50 rounded-lg opacity-30"></div>`;
             }
 
-            // 날짜 채우기
             for (let day = 1; day <= lastDay; day++) {
                 const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const data = dailyMap[day] || { income: 0, expense: 0 };
                 
-                let html = `
+                grid.innerHTML += `
                     <div onclick="selectDate('${dateStr}')" class="p-1 h-20 bg-gray-50 hover:bg-teal-50 rounded-lg cursor-pointer transition flex flex-col justify-between border border-transparent hover:border-teal-300 ${selectedDateStr === dateStr ? 'ring-2 ring-teal-500 bg-teal-50/60' : ''}">
                         <div class="text-right text-xs font-medium text-gray-700">${day}</div>
                         <div class="text-[9px] space-y-0.5 overflow-hidden">
@@ -328,20 +337,17 @@
                         </div>
                     </div>
                 `;
-                grid.innerHTML += html;
             }
         }
 
         function formatShort(amount) {
-            if (amount >= 10000) {
-                return (amount / 10000).toFixed(1) + '만';
-            }
+            if (amount >= 10000) return (amount / 10000).toFixed(1) + '만';
             return amount.toLocaleString();
         }
 
         function selectDate(dateStr) {
             selectedDateStr = dateStr;
-            renderCalendar(); // 선택 효과 반영
+            renderCalendar();
 
             const [y, m, d] = dateStr.split('-');
             document.getElementById('selected-date-title').innerText = `${parseInt(m)}월 ${parseInt(d)}일 상세 내역`;
@@ -372,9 +378,6 @@
             `).join('');
         }
 
-        // 통계 및 차트 렌더링
-        let currentCategoryRanking = [];
-
         function renderAnalytics() {
             const monthFiltered = allData.filter(d => {
                 if (!d.거래일 || d.수입지출 !== '지출') return false;
@@ -388,9 +391,8 @@
             });
 
             currentCategoryRanking = Object.entries(categoryMap).map(([cat, amount]) => ({ cat, amount }));
-            sortCategoryList('desc'); // 기본 내림차순
+            sortCategoryList('desc');
 
-            // 차트 그리기
             const labels = currentCategoryRanking.map(i => i.cat);
             const dataVals = currentCategoryRanking.map(i => i.amount);
 
@@ -420,7 +422,7 @@
             if (order === 'desc') {
                 currentCategoryRanking.sort((a, b) => b.amount - a.amount);
             } else {
-                currentCategoryRanking.sort((a, b) => a.amount - b.amount); // 오름차순
+                currentCategoryRanking.sort((a, b) => a.amount - b.amount);
             }
 
             const container = document.getElementById('category-ranking-list');
@@ -429,10 +431,10 @@
             container.innerHTML = currentCategoryRanking.map((item, idx) => {
                 const pct = total > 0 ? ((item.amount / total) * 100).toFixed(1) : 0;
                 return `
-                    <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                    <div onclick="openSubcatModal('${item.cat}')" class="flex justify-between items-center p-2.5 bg-gray-50 hover:bg-teal-50/60 rounded-xl cursor-pointer transition">
                         <div class="flex items-center space-x-2">
                             <span class="w-5 text-gray-400 font-bold">${idx + 1}</span>
-                            <span class="font-semibold text-gray-700">${item.cat}</span>
+                            <span class="font-semibold text-gray-700 underline decoration-dotted underline-offset-4">${item.cat}</span>
                         </div>
                         <div class="flex items-center space-x-3">
                             <span class="text-gray-400 text-[10px]">${pct}%</span>
@@ -443,7 +445,55 @@
             }).join('');
         }
 
-        // 전체 내역 및 검색 기능
+        // 4번 요구: 카테고리 클릭 시 하위 분류 모달 열기
+        function openSubcatModal(categoryName) {
+            document.getElementById('modal-category-title').innerText = `'${categoryName}' 하위 분류 상세`;
+            
+            const monthFiltered = allData.filter(d => {
+                if (!d.거래일 || d.수입지출 !== '지출' || d.분류 !== categoryName) return false;
+                const [y, m] = d.거래일.split('-').map(Number);
+                return y === currentYear && m === currentMonth;
+            });
+
+            const subcatMap = {};
+            monthFiltered.forEach(d => {
+                const sub = d.하위분류 || '기타';
+                if (!subcatMap[sub]) subcatMap[sub] = { total: 0, items: [] };
+                subcatMap[sub].total += d.금액;
+                subcatMap[sub].items.push(d);
+            });
+
+            const sortedSubs = Object.entries(subcatMap).sort((a, b) => b[1].total - a[1].total);
+            const contentContainer = document.getElementById('modal-subcat-content');
+
+            if (sortedSubs.length === 0) {
+                contentContainer.innerHTML = `<p class="text-center text-gray-400 py-6">해당 카테고리의 지출 내역이 없습니다.</p>`;
+            } else {
+                contentContainer.innerHTML = sortedSubs.map(([subName, data]) => `
+                    <div class="p-3 bg-gray-50 rounded-xl space-y-2">
+                        <div class="flex justify-between font-bold text-gray-800 border-b border-gray-200 pb-1.5">
+                            <span>${subName}</span>
+                            <span class="text-teal-600">${data.total.toLocaleString()}원</span>
+                        </div>
+                        <div class="space-y-1">
+                            ${data.items.map(i => `
+                                <div class="flex justify-between text-[11px] text-gray-500">
+                                    <span>${i.거래일.slice(5)} \vert{} ${i.내역 || '기타'}</span>
+                                    <span class="font-medium text-gray-700">${i.금액.toLocaleString()}원</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('subcat-modal').classList.remove('hidden');
+        }
+
+        function closeSubcatModal() {
+            document.getElementById('subcat-modal').classList.add('hidden');
+        }
+
         function populateCategoryFilter() {
             const categories = [...new Set(allData.map(d => d.분류))].sort();
             const select = document.getElementById('filter-category');
@@ -481,7 +531,6 @@
             `).join('');
         }
 
-        // 하단 탭 전환
         function switchTab(tabName) {
             document.getElementById('tab-calendar').classList.add('hidden');
             document.getElementById('tab-analytics').classList.add('hidden');
